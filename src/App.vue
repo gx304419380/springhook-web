@@ -22,7 +22,7 @@
         <el-table
             :data="tableData"
             stripe border
-            height="400"
+            height="450"
             style="width: 100%">
           <el-table-column
               type="index"
@@ -71,7 +71,7 @@
             accept=".class"
             multiple="false"
             :auto-upload="true">
-          <el-button size="small" type="primary">
+          <el-button type="primary">
             <slot name="trigger"></slot>
             替换bean</el-button>
         </el-upload>
@@ -84,14 +84,40 @@
           <el-table-column prop="argClassListString" label="args" align="center" width="600"></el-table-column>
           <el-table-column label="operation" min-width="100" align="center" fixed="right">
             <template v-slot="scope">
-              <el-button type="text" @click="operateMethod(scope.row)">操作</el-button>
+              <el-button type="text" @click="operateMethod(scope.row)">修改</el-button>
             </template>
           </el-table-column>
         </el-table>
       </el-main>
-      <el-footer @click="backToBeanTable">
-        <el-button >返回</el-button>
+      <el-footer>
+        <el-button round @click="backToBeanTable">返回</el-button>
       </el-footer>
+    </el-container>
+
+    <el-container v-show="showMethodForm">
+      <el-header style="text-align: left">
+        <el-button size="mini" type="primary" icon="el-icon-back" circle @click="backToBeanDetail"></el-button>
+        <b style="margin: 0 10px">{{beanName}}::{{ methodForm.methodName }}</b>
+      </el-header>
+      <el-main style="text-align: left">
+        <el-form ref="form" :model="methodForm" label-width="80px">
+          <el-form-item label="修改类型">
+            <el-select v-model="methodForm.hookMethodType" placeholder="请选修改方法类型" default-first-option>
+              <el-option label="Replace" value="REPLACE"></el-option>
+              <el-option label="Before" value="BEFORE"></el-option>
+              <el-option label="After" value="AFTER"></el-option>
+              <el-option label="Finally" value="FINALLY"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="方法代码">
+            <el-input :rows="13" type="textarea" v-model="methodForm.methodCode"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="onMethodSubmit">Submit</el-button>
+            <el-button @click="backToBeanDetail">Back</el-button>
+          </el-form-item>
+        </el-form>
+      </el-main>
     </el-container>
   </div>
 </template>
@@ -107,11 +133,19 @@ export default {
     return {
       showBeanTable: true,
       showBeanDetail: false,
+      showMethodForm: false,
       beanName: null,
       beanDetail: null,
       methodList: [],
       fileList: [],
       uploadUrl: null,
+      methodForm: {
+        methodName: null,
+        argClassList:[],
+        beanName: null,
+        hookMethodType: 'REPLACE',
+        methodCode: null
+      },
       searchCondition: {
         beanName: null,
         className: null
@@ -137,7 +171,6 @@ export default {
       this.beanName = row.beanName;
       this.showBeanTable = false;
       this.showBeanDetail = true;
-      this.showReplaceBean = false;
       this.uploadUrl = "/spring/hook/replaceBean?beanName=" + this.beanName;
       axios.get('/spring/hook/bean/detail/' + this.beanName)
           .then(res => {
@@ -148,10 +181,20 @@ export default {
     },
     operateMethod(row) {
       console.log(row)
+      this.methodForm.methodName = row.methodName;
+      this.methodForm.argClassList = row.argClassList;
+      this.methodForm.beanName = this.beanName;
+      this.methodForm.methodCode = null;
+      this.showMethodForm = true;
+      this.showBeanDetail = false;
     },
     backToBeanTable() {
       this.showBeanTable = true;
       this.showBeanDetail = false;
+    },
+    backToBeanDetail() {
+      this.showBeanDetail = true;
+      this.showMethodForm = false;
     },
     uploadSuccess(res) {
       if (res === 'SUCCESS') {
@@ -180,6 +223,13 @@ export default {
       }
       return extension
     },
+    onMethodSubmit() {
+      console.log(this.methodForm)
+      axios.post('/spring/hook/replaceMethod', this.methodForm)
+      .then(res => {
+        console.log(res);
+      })
+    }
   }
 }
 </script>
