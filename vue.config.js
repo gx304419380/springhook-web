@@ -1,8 +1,10 @@
 module.exports = {
+    productionSourceMap: false,
+    publicPath: '',
     devServer: {
         proxy: {
             '/spring/hook': {
-                target: 'http://localhost:8899'
+                target: 'http://localhost:8888/'
             }
         }
     }

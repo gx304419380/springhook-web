@@ -110,7 +110,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="方法代码">
-            <el-input :rows="13" type="textarea" v-model="methodForm.methodCode"></el-input>
+            <el-input class="codeEditor" :rows="13" type="textarea" v-model="methodForm.methodCode"></el-input>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="onMethodSubmit">Submit</el-button>
@@ -154,14 +154,24 @@ export default {
     }
   },
   created() {
+    this.getDefaultPackage();
     this.searchBean();
   },
   methods: {
+    getDefaultPackage() {
+      axios.get('/spring/hook/package')
+      .then(res => {
+        this.searchCondition.className = res.data;
+      })
+    },
     searchBean() {
       axios.get('/spring/hook/bean', {
         params: {beanName: this.searchCondition.beanName, className: this.searchCondition.className}
       }).then(res => {
         this.tableData = res.data;
+      }).catch(res => {
+        console.log(res);
+        alert("search bean error")
       })
     },
     onSubmit() {
@@ -225,11 +235,38 @@ export default {
     },
     onMethodSubmit() {
       console.log(this.methodForm)
-      axios.post('/spring/hook/replaceMethod', this.methodForm)
-      .then(res => {
-        console.log(res);
-      })
+      this.$confirm('确定修改方法?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        axios.post('/spring/hook/replaceMethod', this.methodForm)
+            .then(res => {
+              if (res.data === 'SUCCESS') {
+                this.$message({
+                  message: '方法修改完毕',
+                  duration: 2000,
+                  showClose: true,
+                  type: 'success'
+                })
+                return;
+              }
+              this.$message({
+                message: '发生错误：' + res.data,
+                duration: 2000,
+                showClose: true,
+                type: 'error'
+              })
+
+            })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消'
+        });
+      });
     }
+
   }
 }
 </script>
@@ -251,5 +288,11 @@ export default {
 .beanDetailHeader{
   text-align: left;
   padding-top: 10px;
+}
+
+.codeEditor .el-textarea__inner {
+  background-color: #2c3e50;
+  color: white;
+  font-family: Consolas, sans-serif;
 }
 </style>
